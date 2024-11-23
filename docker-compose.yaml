@@ -1,0 +1,35 @@
+version: "3.7"
+services:
+
+
+  app:
+    container_name: "fastapi"
+    image: img
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: library
+      DATABASE_USER: user
+      DATABASE_PASSWORD: password
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: library
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user" ]
+      interval: 2s
+      timeout: 5s
+      retries: 5
