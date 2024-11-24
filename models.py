@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Integer, String, create_engine, ForeignKey
-from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -51,8 +50,8 @@ class AuthorBook(Base):
 
 class BookOwner(Base):
     __tablename__ = "BookOwner"
-
-    user_id = Column(Integer, ForeignKey(User.id), primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey(User.id), index=True)
     book_id = Column(Integer, ForeignKey(Book.id), index=True)
 
 Base.metadata.create_all(bind=engine)

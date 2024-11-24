@@ -1,70 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from schemas import *
 from models import *
 from typing import List
 
 app = FastAPI()
-
-# Схема для валидации данных пользователя
-class UserCreate(BaseModel):
-    name: str
-    email: str
-    class Config:
-        orm_mode = True
-class AddBook(BaseModel):
-    name: str
-    author_id: int
-    category_id: int
-    class Config:
-        orm_mode = True
-class AddAuthor(BaseModel):
-    name: str
-    second_name: str
-    class Config:
-        orm_mode = True
-class AddCategory(BaseModel):
-    name: str
-    class Config:
-        orm_mode = True
-class TakeBook(BaseModel):
-    user_id: int
-    book_id: int
-
-    class Config:
-        orm_mode = True
-class BookResponse(BaseModel):
-    id: int
-    name: str
-    author_id: int
-    category_id: int
-    class Config:
-        orm_mode = True
-class CategoryResponse(BaseModel):
-    id: int
-    name: str
-    class Config:
-        orm_mode = True
-class UserResponse(BaseModel):
-    id: int
-    name: str
-    email: str
-    class Config:
-        orm_mode = True
-
-class AuthorResponse(BaseModel):
-    id: int
-    name: str
-    second_name: str
-    class Config:
-        orm_mode = True
-
-class BookOwnerResponse(BaseModel):
-    id: int
-    user_id: int
-    book_id: int
-    class Config:
-        orm_mode = True
 
 # Получение сессии базы данных
 def get_db():
@@ -154,8 +94,12 @@ def add_category(category: AddCategory, db: Session = Depends(get_db)):
     db.refresh(new_category)
     return {"id": new_category.id, "name": new_category.name}
 
-
-
+@app.delete("/book_owners/{user_id}/{book_id}")
+def delete_user(user_id: int, book_id: int, db: Session = Depends(get_db)):
+    record = db.query(BookOwner).filter(BookOwner.user_id == user_id).filter(BookOwner.book_id == book_id).first()
+    db.delete(record)
+    db.commit()
+    return {"detail": "record deleted"}
 
 
 
