@@ -1,9 +1,15 @@
+import json
+
+import redis
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas import *
 from models import *
-from typing import List
+from typing import List, Any
 
+redis_host = os.getenv("REDIS_HOST", "localhost")
+redis_port = int(os.getenv("REDIS_PORT", 6379))
+redis_client = redis.Redis(host=redis_host, port=redis_port)
 app = FastAPI()
 
 # Получение сессии базы данных
@@ -101,5 +107,21 @@ def delete_user(user_id: int, book_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"detail": "record deleted"}
 
+@app.get("/books/{book_name}", response_model=BookResponse)
+def get_book_by_name(book_name: str, db: Session = Depends(get_db)):
+    cache_key = f'{book_name}'
+    cached_data = redis_client.get(cache_key)
+    if cached_data:
+        print('данные взяты из кэша')
+        decoded_string = cached_data.decode('utf-8')
+        data_dict = json.loads(decoded_string)
+        print(data_dict)
+        return data_dict
 
-
+    print('берём из базы данных')
+    book_data: Any = db.query(Book).filter(Book.name == book_name).first()
+    book = to_dict(book_data)
+    data_json = json.dumps(book)
+    redis_client.setex(cache_key, 60, data_json)
+    print(book)
+    return book
