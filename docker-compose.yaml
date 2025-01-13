@@ -9,6 +9,8 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      SENTRY_DSN: ${SENTRY_DSN}
+      ENVIRONMENT: ${ENVIRONMENT}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_NAME: ${DATABASE_NAME}
@@ -46,7 +48,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: celery -A celery_config worker --loglevel=info
+    command: >
+      sh -c "celery -A celery_config worker --loglevel=info & celery -A celery_config beat -l info"
     environment:
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
@@ -57,3 +60,4 @@ services:
       REDIS_PORT: ${REDIS_PORT}
     depends_on:
       - redis
+
