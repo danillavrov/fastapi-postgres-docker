@@ -1,16 +1,34 @@
 import json
-
+import random
 import redis
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas import *
 from models import *
-from typing import List, Any
+from typing import List
+from celery_config import get_book
+import sentry_sdk
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+redis_host = os.getenv("REDIS_HOST")
+redis_port = int(os.getenv("REDIS_PORT"))
+redis_client = redis.Redis(host=redis_host, port=redis_port, db=0)
 
-redis_host = os.getenv("REDIS_HOST", "localhost")
-redis_port = int(os.getenv("REDIS_PORT", 6379))
-redis_client = redis.Redis(host=redis_host, port=redis_port)
+
+
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    _experiments={
+        # Set continuous_profiling_auto_start to True
+        # to automatically start the profiler on when
+        # possible.
+        "continuous_profiling_auto_start": True,
+    },
+)
 app = FastAPI()
+
 
 # Получение сессии базы данных
 def get_db():
@@ -19,6 +37,38 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@app.get("/books/{book_name}")
+def get_book_by_name(book_name: str, db: Session = Depends(get_db)):
+    random_int = random.randint(1, 100000)
+    task_number = str(random_int)
+    cache_key = f'{book_name}'
+    cached_data = redis_client.get(cache_key)
+    if cached_data:
+        print('данные взяты из кэша')
+        decoded_string = cached_data.decode('utf-8')
+        data_dict = json.loads(decoded_string)
+        print(data_dict)
+        redis_client.setex(task_number, 60, decoded_string)
+        return {"task_number": task_number, "status": "ready by cache"}
+    print('запускаем запрос celery')
+
+    task_number = str(random_int)
+    get_book.delay(book_name, task_number)
+    return {"task_number": task_number, "status": "started"}
+
+@app.get("/tasks/{task_number}")
+def get_result(task_number: str, db: Session = Depends(get_db)):
+    result_red = redis_client.get(task_number)
+    if result_red:
+        result = result_red.decode('utf-8')
+        data_dict = json.loads(result)
+        name = data_dict['name']
+        data_json = json.dumps(data_dict)
+        redis_client.setex(name, 60, data_json)
+        return json.loads(result)
+    else:
+        return('результата пока нет, попробуйте позже')
 
 # Добавление нового пользователя
 @app.post("/users/", response_model=dict)
@@ -106,22 +156,3 @@ def delete_user(user_id: int, book_id: int, db: Session = Depends(get_db)):
     db.delete(record)
     db.commit()
     return {"detail": "record deleted"}
-
-@app.get("/books/{book_name}", response_model=BookResponse)
-def get_book_by_name(book_name: str, db: Session = Depends(get_db)):
-    cache_key = f'{book_name}'
-    cached_data = redis_client.get(cache_key)
-    if cached_data:
-        print('данные взяты из кэша')
-        decoded_string = cached_data.decode('utf-8')
-        data_dict = json.loads(decoded_string)
-        print(data_dict)
-        return data_dict
-
-    print('берём из базы данных')
-    book_data: Any = db.query(Book).filter(Book.name == book_name).first()
-    book = to_dict(book_data)
-    data_json = json.dumps(book)
-    redis_client.setex(cache_key, 60, data_json)
-    print(book)
-    return book
