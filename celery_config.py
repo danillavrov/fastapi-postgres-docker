@@ -1,9 +1,11 @@
 import json
+import time
+
 import redis
-from models import *
 from celery import Celery
 from celery.schedules import crontab
-import time
+
+from models import *
 
 redis_host = os.getenv("REDIS_HOST")
 redis_port = int(os.getenv("REDIS_PORT"))
@@ -15,7 +17,7 @@ celery_app = Celery(
 
 celery_app.conf.beat_schedule = {
     "print_message_periodically": {
-        "task": "print_message", 
+        "task": "print_message",
         "schedule": crontab(minute="*/1"),
     },
 }

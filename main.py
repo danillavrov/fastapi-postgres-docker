@@ -1,13 +1,16 @@
 import json
 import random
-import redis
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
-from schemas import *
-from models import *
 from typing import List
-from celery_config import get_book
+
+import redis
 import sentry_sdk
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy.orm import Session
+
+from celery_config import get_book
+from models import *
+from schemas import *
+
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 redis_host = os.getenv("REDIS_HOST")
 redis_port = int(os.getenv("REDIS_PORT"))

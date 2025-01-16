@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, create_engine, ForeignKey
+import os
+
+from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
+
 # Чтение переменных из окружения
 DATABASE_HOST = os.getenv("DATABASE_HOST")
 DATABASE_PORT = os.getenv("DATABASE_PORT")

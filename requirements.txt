@@ -24,6 +24,8 @@ kombu==5.4.2
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
+mypy==1.14.1
+mypy-extensions==1.0.0
 orjson==3.10.11
 prompt_toolkit==3.0.48
 psycopg2-binary==2.9.10
@@ -38,6 +40,7 @@ python-multipart==0.0.17
 PyYAML==6.0.2
 redis==5.2.1
 rich==13.9.4
+ruff==0.9.2
 sentry-sdk==2.19.2
 shellingham==1.5.4
 six==1.17.0
