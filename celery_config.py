@@ -1,11 +1,12 @@
 import json
+import os
 import time
 
 import redis
 from celery import Celery
 from celery.schedules import crontab
 
-from models import *
+from models import Book, SessionLocal, to_dict
 
 redis_host = os.getenv("REDIS_HOST")
 redis_port = int(os.getenv("REDIS_PORT"))
